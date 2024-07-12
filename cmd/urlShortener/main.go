@@ -1,13 +1,18 @@
 package main
 
 import (
+	"compress/bzip2"
 	"fmt"
 	"log/slog"
 	"os"
 
 	"github.com/GlebusDev/urlShortener/internal/config"
+	myMiddlewareLogger "github.com/GlebusDev/urlShortener/internal/httpServer/middleware/logger"
 	"github.com/GlebusDev/urlShortener/internal/lib/logger/sl"
 	"github.com/GlebusDev/urlShortener/internal/storage/sqlite"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 )
 
 const (
@@ -36,15 +41,17 @@ func main() {
 		os.Exit(1)
 	}
 
-	outUrl, err := strg.GetURL("shot")
+	_ = strg
+		// router chi
+	var router = chi.NewRouter()
 
-	if err != nil {
-		logger.Error("Faild to get url", sl.Err(err))
-	}
 
-	logger.Info("URL: ", outUrl)
-	// router chi
-
+	router.Use(middleware.RequestID)
+	router.Use(middleware.Logger)
+	router.Use(myMiddlewareLogger.New(logger))
+	router.Use(middleware.Recoverer)
+	router.Use(middleware.URLFormat)
+		
 	// server
 }
 
