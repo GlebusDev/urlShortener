@@ -1,12 +1,12 @@
 package main
 
 import (
-	"compress/bzip2"
 	"fmt"
 	"log/slog"
 	"os"
 
 	"github.com/GlebusDev/urlShortener/internal/config"
+	"github.com/GlebusDev/urlShortener/internal/httpServer/handlers/url/save"
 	myMiddlewareLogger "github.com/GlebusDev/urlShortener/internal/httpServer/middleware/logger"
 	"github.com/GlebusDev/urlShortener/internal/lib/logger/sl"
 	"github.com/GlebusDev/urlShortener/internal/storage/sqlite"
@@ -51,7 +51,9 @@ func main() {
 	router.Use(myMiddlewareLogger.New(logger))
 	router.Use(middleware.Recoverer)
 	router.Use(middleware.URLFormat)
-		
+	
+	router.Post("/url",save.New(logger, strg))
+
 	// server
 }
 
