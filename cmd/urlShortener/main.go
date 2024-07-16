@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log/slog"
+	"net/http"
 	"os"
 
 	"github.com/GlebusDev/urlShortener/internal/config"
@@ -41,20 +42,35 @@ func main() {
 		os.Exit(1)
 	}
 
-	_ = strg
-		// router chi
+	// router chi
 	var router = chi.NewRouter()
-
 
 	router.Use(middleware.RequestID)
 	router.Use(middleware.Logger)
 	router.Use(myMiddlewareLogger.New(logger))
 	router.Use(middleware.Recoverer)
 	router.Use(middleware.URLFormat)
-	
-	router.Post("/url",save.New(logger, strg))
+
+	router.Post("/url", save.New(logger, strg))
+	router.Get("/{alias}", redirect.New(logger, strg))
 
 	// server
+	logger.Info("starting server", slog.String("address", config.Address))
+
+	var server = &http.Server{
+		Addr:         config.Address,
+		Handler:      router,
+		ReadTimeout:  config.HTTPServer.Timeout,
+		WriteTimeout: config.HTTPServer.IdleTimeout,
+		IdleTimeout:  config.IdleTimeout,
+	}
+
+	if err = server.ListenAndServe(); err != nil {
+		logger.Error("failed to start server")
+	}
+
+	logger.Error("server stopped")
+
 }
 
 func setupLogger(env string) *slog.Logger {
